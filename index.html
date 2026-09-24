@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pitch Calculator</title>
+<style>
+:root{--bg:#eef3ea;--card:#fff;--ink:#1c2b21;--mute:#5d6d62;--line:#cfd9ca;--acc:#1f6b3a;--accbg:#e2f0e5;--warn:#9a4a00;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a15;--card:#1a251e;--ink:#e6efe8;--mute:#93a598;--line:#2c3b31;--acc:#6fcf8f;--accbg:#22392a;--warn:#e0a25a}}
+:root[data-theme="dark"]{--bg:#121a15;--card:#1a251e;--ink:#e6efe8;--mute:#93a598;--line:#2c3b31;--acc:#6fcf8f;--accbg:#22392a;--warn:#e0a25a}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:520px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}
+p.sub{margin:0 0 20px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+label{display:block;font-weight:600;margin-bottom:6px}
+input[type=number]{width:100%;font:inherit;font-size:1.5rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+input:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.tog{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:400}
+.tog input{width:20px;height:20px;accent-color:var(--acc)}
+.res{text-align:center}
+.pitch{font-size:3.5rem;font-weight:700;color:var(--acc);line-height:1.1}
+.zone{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:99px;background:var(--accbg);color:var(--acc);font-size:.85rem}
+.steps{margin-top:14px;text-align:left;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;background:var(--bg);border-radius:10px;padding:10px 12px}
+.steps div{padding:1px 0}
+.warn{color:var(--warn);margin-top:10px;font-size:.9rem}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-weight:600}
+h2{font-size:1rem;margin:0 0 8px}
+tr.on td{background:var(--accbg);color:var(--acc);font-weight:600}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+  <h1>Pitch Calculator</h1>
+  <p class="sub">Enter the distance to the green in studs to get the pitch.</p>
+
+  <div class="card">
+    <label for="r">Range (studs)</label>
+    <input id="r" type="number" inputmode="decimal" min="0" step="1" value="360" autofocus>
+    <label class="tog" for="round"><input id="round" type="checkbox" checked> Round the range for easier math</label>
+  </div>
+
+  <div class="card res" aria-live="polite">
+    <div class="pitch" id="p">--</div>
+    <div class="zone" id="z"></div>
+    <div class="steps" id="s"></div>
+    <div class="warn" id="w"></div>
+  </div>
+
+  <div class="card">
+    <h2>Quick reference</h2>
+    <div class="wrap"><table id="t">
+      <thead><tr><th>Range</th><th>Formula</th><th>Rounding</th></tr></thead>
+      <tbody>
+        <tr data-z="1"><td>0 to 450</td><td>90 &minus; R / 30</td><td>Nearest 30</td></tr>
+        <tr data-z="2"><td>450 to 650</td><td>75 &minus; (R &minus; 450) / 20</td><td>(R &minus; 450) to nearest 20</td></tr>
+        <tr data-z="3"><td>Over 650</td><td>65 &minus; (R &minus; 650) / 10</td><td>(R &minus; 650) to nearest 10</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Number.isInteger(n)?String(n):String(+n.toFixed(2));
+const nearest=(v,m)=>Math.round(v/m)*m;
+
+function calc(){
+  const raw=parseFloat($('r').value);
+  const rows=document.querySelectorAll('#t tr[data-z]');
+  rows.forEach(r=>r.classList.remove('on'));
+  $('w').textContent='';
+  if(isNaN(raw)||raw<0){$('p').textContent='--';$('z').textContent='';$('s').innerHTML='';$('w').textContent='Enter a range of 0 or more.';return}
+  const rnd=$('round').checked;
+  let R=raw,zone,lines=[],P;
+  if(raw<=450){
+    zone=1;
+    if(rnd){R=nearest(raw,30);if(R!==raw)lines.push(`R = ${fmt(raw)} rounds to ${R}`)}
+    P=90-R/30;
+    lines.push(`P = 90 - ${R} / 30`,`P = 90 - ${fmt(R/30)}`);
+  }else if(raw<=650){
+    zone=2;
+    let d=raw-450;
+    if(rnd){const d2=nearest(d,20);if(d2!==d)lines.push(`R - 450 = ${fmt(d)} rounds to ${d2}`);d=d2}
+    P=75-d/20;
+    lines.push(`P = 75 - (${rnd?d+450:fmt(raw)} - 450) / 20`,`P = 75 - ${d} / 20`,`P = 75 - ${fmt(d/20)}`);
+  }else{
+    zone=3;
+    let d=raw-650;
+    if(rnd){const d2=nearest(d,10);if(d2!==d)lines.push(`R - 650 = ${fmt(d)} rounds to ${d2}`);d=d2}
+    P=65-d/10;
+    lines.push(`P = 65 - (${rnd?d+650:fmt(raw)} - 650) / 10`,`P = 65 - ${d} / 10`,`P = 65 - ${fmt(d/10)}`);
+  }
+  lines.push(`P = ${fmt(P)}\u00B0`);
+  $('p').textContent=fmt(P)+'\u00B0';
+  $('z').textContent=['','90\u00B0 to 75\u00B0 zone','75\u00B0 to 65\u00B0 zone','Below 65\u00B0 zone'][zone];
+  $('s').innerHTML=lines.map(l=>`<div>${l}</div>`).join('');
+  document.querySelector(`#t tr[data-z="${zone}"]`).classList.add('on');
+  if(P<0){$('p').textContent='--';$('w').textContent='That range is past what this formula covers (pitch would go below 0\u00B0).'}
+  else if(P<10){$('w').textContent='Very low pitch. Double-check that range is right.'}
+}
+$('r').addEventListener('input',calc);
+$('round').addEventListener('change',calc);
+calc();
+</script>
+</body>
+</html>
