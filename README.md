@@ -14,6 +14,6 @@ Turn on "Round the range for easier math" to round R to the nearest 30, 20, or 1
 
 ## Use it
 
-Open `index.html` in any browser, or host it with GitHub Pages.
+Open `index.html` in any browser.
 
 Credit to Wayward outpost and HolySmokeImTrash for this idea.
